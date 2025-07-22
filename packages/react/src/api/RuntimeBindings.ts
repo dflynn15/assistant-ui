@@ -54,12 +54,17 @@ export type MessageStateBinding = SubscribableWithState<
   MessageRuntimePath
 >;
 
+export type ThreadListItemStatus = "archived" | "regular" | "new" | "deleted";
+
 export type ThreadListItemState = {
   readonly isMain: boolean;
   readonly id: string;
   readonly remoteId: string | undefined;
   readonly externalId: string | undefined;
+  /**
+   * @deprecated Use `id` instead. This field will be removed in version 0.8.0.
+   */
   readonly threadId: string;
-  readonly status: "archived" | "regular" | "new" | "deleted";
+  readonly status: ThreadListItemStatus;
   readonly title?: string | undefined;
 };

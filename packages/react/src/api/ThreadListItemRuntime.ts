@@ -5,9 +5,12 @@ import { ThreadListRuntimeCoreBinding } from "./ThreadListRuntime";
 
 export type ThreadListItemEventType = "switched-to" | "switched-away";
 
-import type { ThreadListItemState } from "./RuntimeBindings";
+import type {
+  ThreadListItemState,
+  ThreadListItemStatus,
+} from "./RuntimeBindings";
 
-export type { ThreadListItemState };
+export type { ThreadListItemState, ThreadListItemStatus };
 
 export type ThreadListItemRuntime = {
   readonly path: ThreadListItemRuntimePath;
