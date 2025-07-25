@@ -1,6 +1,11 @@
 {
   "name": "@assistant-ui/monorepo",
   "private": true,
+  "workspaces": [
+    "packages/*",
+    "examples/*",
+    "apps/*"
+  ],
   "scripts": {
     "docs:dev": "pnpm --filter=@assistant-ui/docs dev",
     "ci:version": "changeset version && pnpm install --no-frozen-lockfile",
