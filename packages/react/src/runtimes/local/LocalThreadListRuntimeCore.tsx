@@ -151,7 +151,7 @@ export class LocalThreadListRuntimeCore
         ) as TextMessagePart[];
 
         if (textParts.length > 0) {
-          const text = textParts[0]!.text.trim();
+          const text = textParts[0]?.text?.trim() || "";
           if (text.length > 0) {
             title = this._truncateTitle(text);
           }
