@@ -147,6 +147,7 @@ export class LocalThreadListRuntimeCore
 
       // Find the first user message with text content
       const firstUserMessage = messages.find((msg) => msg.role === "user");
+
       let title = "New Conversation";
 
       if (firstUserMessage && firstUserMessage.content.length > 0) {
@@ -156,9 +157,12 @@ export class LocalThreadListRuntimeCore
         ) as TextMessagePart[];
 
         if (textParts.length > 0) {
-          const text = textParts[0]?.text?.trim() || "";
-          if (text.length > 0) {
-            title = this._truncateTitle(text);
+          const firstTextPart = textParts[0];
+          if (firstTextPart) {
+            const text = firstTextPart.text.trim();
+            if (text.length > 0) {
+              title = this._truncateTitle(text);
+            }
           }
         }
       }
