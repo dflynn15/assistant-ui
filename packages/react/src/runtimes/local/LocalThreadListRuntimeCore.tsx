@@ -6,6 +6,8 @@ import type { TextMessagePart } from "../../types/MessagePartTypes";
 export type LocalThreadFactory = () => LocalThreadRuntimeCore;
 
 const EMPTY_ARRAY = Object.freeze([]);
+const DEFAULT_TITLE_MAX_LENGTH = 50;
+
 export class LocalThreadListRuntimeCore
   extends BaseSubscribable
   implements ThreadListRuntimeCore
@@ -117,7 +119,10 @@ export class LocalThreadListRuntimeCore
     throw new Error("Thread not found");
   }
 
-  private _truncateTitle(text: string, maxLength: number = 50): string {
+  private _truncateTitle(
+    text: string,
+    maxLength: number = DEFAULT_TITLE_MAX_LENGTH,
+  ): string {
     if (text.length <= maxLength) {
       return text;
     }
