@@ -1,6 +1,7 @@
 import { ThreadListRuntimeCore } from "../core/ThreadListRuntimeCore";
 import { BaseSubscribable } from "../remote-thread-list/BaseSubscribable";
 import { LocalThreadRuntimeCore } from "./LocalThreadRuntimeCore";
+import type { TextMessagePart } from "../../types/MessagePartTypes";
 
 export type LocalThreadFactory = () => LocalThreadRuntimeCore;
 
@@ -10,6 +11,8 @@ export class LocalThreadListRuntimeCore
   implements ThreadListRuntimeCore
 {
   private _mainThread: LocalThreadRuntimeCore;
+  private _title: string | undefined;
+
   constructor(_threadFactory: LocalThreadFactory) {
     super();
 
@@ -24,28 +27,31 @@ export class LocalThreadListRuntimeCore
     return this._mainThread;
   }
 
-  public get newThreadId(): string {
-    throw new Error("Method not implemented.");
+  public get newThreadId(): string | undefined {
+    return undefined; // Single-thread context has no new threads
   }
 
   public get threadIds(): readonly string[] {
-    throw EMPTY_ARRAY;
+    return EMPTY_ARRAY; // Only main thread exists, but it's not in the "list"
   }
 
   public get archivedThreadIds(): readonly string[] {
-    throw EMPTY_ARRAY;
+    return EMPTY_ARRAY; // Local threads are never archived
   }
 
   public get mainThreadId(): string {
     return "__DEFAULT_ID__";
   }
 
-  public getThreadRuntimeCore(): never {
-    throw new Error("Method not implemented.");
+  public getThreadRuntimeCore(threadId: string) {
+    if (threadId === this.mainThreadId) {
+      return this._mainThread;
+    }
+    throw new Error("Thread not found");
   }
 
   public getLoadThreadsPromise(): Promise<void> {
-    throw new Error("Method not implemented.");
+    return Promise.resolve(); // Nothing to load for local runtime
   }
 
   public getItemById(threadId: string) {
@@ -55,46 +61,102 @@ export class LocalThreadListRuntimeCore
         threadId: this.mainThreadId,
         remoteId: this.mainThreadId,
         externalId: undefined,
-        title: undefined,
+        title: this._title,
         isMain: true,
       };
     }
-    throw new Error("Method not implemented");
+    return undefined; // Thread not found
   }
 
-  public async switchToThread(): Promise<void> {
-    throw new Error("Method not implemented.");
+  public async switchToThread(threadId: string): Promise<void> {
+    if (threadId === this.mainThreadId) {
+      return; // Already on main thread
+    }
+    throw new Error("Thread not found");
   }
 
   public switchToNewThread(): Promise<void> {
-    throw new Error("Method not implemented.");
+    throw new Error("Cannot create new threads in local runtime");
   }
 
-  public rename(): Promise<void> {
-    throw new Error("Method not implemented.");
+  public rename(threadId: string, newTitle: string): Promise<void> {
+    if (threadId === this.mainThreadId) {
+      this._title = newTitle;
+      this._notifySubscribers();
+      return Promise.resolve();
+    }
+    throw new Error("Thread not found");
   }
 
-  public archive(): Promise<void> {
-    throw new Error("Method not implemented.");
+  public archive(_threadId: string): Promise<void> {
+    throw new Error("Cannot archive threads in local runtime");
   }
 
-  public detach(): Promise<void> {
-    throw new Error("Method not implemented.");
+  public detach(_threadId: string): Promise<void> {
+    // No-op for local runtime - nothing to detach
+    return Promise.resolve();
   }
 
-  public unarchive(): Promise<void> {
-    throw new Error("Method not implemented.");
+  public unarchive(_threadId: string): Promise<void> {
+    throw new Error("Cannot unarchive threads in local runtime");
   }
 
-  public delete(): Promise<void> {
-    throw new Error("Method not implemented.");
+  public delete(_threadId: string): Promise<void> {
+    throw new Error("Cannot delete the main thread in local runtime");
   }
 
-  public initialize(): never {
-    throw new Error("Method not implemented.");
+  public initialize(
+    threadId: string,
+  ): Promise<{ remoteId: string; externalId: string | undefined }> {
+    if (threadId === this.mainThreadId) {
+      return Promise.resolve({
+        remoteId: this.mainThreadId,
+        externalId: undefined,
+      });
+    }
+    throw new Error("Thread not found");
   }
 
-  public generateTitle(): never {
-    throw new Error("Method not implemented.");
+  public generateTitle(threadId: string): Promise<void> {
+    if (threadId === this.mainThreadId) {
+      const messages = this._mainThread.messages;
+
+      // Find the first user message with text content
+      const firstUserMessage = messages.find((msg) => msg.role === "user");
+      let title = "New Conversation";
+
+      if (firstUserMessage && firstUserMessage.content.length > 0) {
+        // Extract text parts using type-safe filtering
+        const textParts = firstUserMessage.content.filter(
+          (part) => part.type === "text",
+        ) as TextMessagePart[];
+
+        if (textParts.length > 0) {
+          const text = textParts[0]!.text.trim();
+          if (text.length > 0) {
+            // Truncate to ~50 characters, breaking at word boundaries
+            if (text.length <= 50) {
+              title = text;
+            } else {
+              const truncated = text.substring(0, 47);
+              const words = truncated.split(" ");
+
+              // Handle edge case where first word is longer than 47 chars
+              if (words.length === 1) {
+                title = truncated + "...";
+              } else {
+                // Remove last potentially incomplete word
+                title = words.slice(0, -1).join(" ") + "...";
+              }
+            }
+          }
+        }
+      }
+
+      this._title = title;
+      this._notifySubscribers();
+      return Promise.resolve();
+    }
+    throw new Error("Thread not found");
   }
 }
