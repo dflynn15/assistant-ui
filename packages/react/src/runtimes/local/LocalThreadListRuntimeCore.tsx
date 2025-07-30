@@ -117,6 +117,25 @@ export class LocalThreadListRuntimeCore
     throw new Error("Thread not found");
   }
 
+  private _truncateTitle(text: string, maxLength: number = 50): string {
+    if (text.length <= maxLength) {
+      return text;
+    }
+
+    const ellipsis = "...";
+    const truncateLength = maxLength - ellipsis.length;
+    const truncated = text.substring(0, truncateLength);
+    const words = truncated.split(" ");
+
+    // Handle edge case where first word is longer than truncateLength
+    if (words.length === 1) {
+      return truncated + ellipsis;
+    } else {
+      // Remove last potentially incomplete word
+      return words.slice(0, -1).join(" ") + ellipsis;
+    }
+  }
+
   public generateTitle(threadId: string): Promise<void> {
     if (threadId === this.mainThreadId) {
       const messages = this._mainThread.messages;
@@ -134,21 +153,7 @@ export class LocalThreadListRuntimeCore
         if (textParts.length > 0) {
           const text = textParts[0]!.text.trim();
           if (text.length > 0) {
-            // Truncate to ~50 characters, breaking at word boundaries
-            if (text.length <= 50) {
-              title = text;
-            } else {
-              const truncated = text.substring(0, 47);
-              const words = truncated.split(" ");
-
-              // Handle edge case where first word is longer than 47 chars
-              if (words.length === 1) {
-                title = truncated + "...";
-              } else {
-                // Remove last potentially incomplete word
-                title = words.slice(0, -1).join(" ") + "...";
-              }
-            }
+            title = this._truncateTitle(text);
           }
         }
       }
