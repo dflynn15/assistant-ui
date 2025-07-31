@@ -45,49 +45,45 @@ export class LocalThreadListRuntimeCore
     return "__DEFAULT_ID__";
   }
 
-  public getThreadRuntimeCore(threadId: string) {
-    if (threadId === this.mainThreadId) {
-      return this._mainThread;
-    }
-    throw new Error("Thread not found");
+  public getThreadRuntimeCore(_threadId: string) {
+    // In local runtime, there's only one thread (the main thread)
+    // Return main thread runtime for any requested threadId
+    return this._mainThread;
   }
 
   public getLoadThreadsPromise(): Promise<void> {
     return Promise.resolve(); // Nothing to load for local runtime
   }
 
-  public getItemById(threadId: string) {
-    if (threadId === this.mainThreadId) {
-      return {
-        status: "regular" as const,
-        threadId: this.mainThreadId,
-        remoteId: this.mainThreadId,
-        externalId: undefined,
-        title: this._title,
-        isMain: true,
-      };
-    }
-    return undefined; // Thread not found
+  public getItemById(_threadId: string) {
+    // In local runtime, there's only one thread (the main thread)
+    // Return main thread data for any requested threadId
+    return {
+      status: "regular" as const,
+      threadId: this.mainThreadId,
+      remoteId: this.mainThreadId,
+      externalId: undefined,
+      title: this._title,
+      isMain: true,
+    };
   }
 
-  public async switchToThread(threadId: string): Promise<void> {
-    if (threadId === this.mainThreadId) {
-      return; // Already on main thread
-    }
-    throw new Error("Thread not found");
+  public async switchToThread(_threadId: string): Promise<void> {
+    // In local runtime, there's only one thread (the main thread)
+    // All switch requests are effectively no-ops since we're always on the main thread
+    return;
   }
 
   public switchToNewThread(): Promise<void> {
     throw new Error("Cannot create new threads in local runtime");
   }
 
-  public rename(threadId: string, newTitle: string): Promise<void> {
-    if (threadId === this.mainThreadId) {
-      this._title = newTitle;
-      this._notifySubscribers();
-      return Promise.resolve();
-    }
-    throw new Error("Thread not found");
+  public rename(_threadId: string, newTitle: string): Promise<void> {
+    // In local runtime, there's only one thread (the main thread)
+    // All rename requests apply to the main thread
+    this._title = newTitle;
+    this._notifySubscribers();
+    return Promise.resolve();
   }
 
   public archive(_threadId: string): Promise<void> {
@@ -108,15 +104,14 @@ export class LocalThreadListRuntimeCore
   }
 
   public initialize(
-    threadId: string,
+    _threadId: string,
   ): Promise<{ remoteId: string; externalId: string | undefined }> {
-    if (threadId === this.mainThreadId) {
-      return Promise.resolve({
-        remoteId: this.mainThreadId,
-        externalId: undefined,
-      });
-    }
-    throw new Error("Thread not found");
+    // In local runtime, there's only one thread (the main thread)
+    // All initialize requests apply to the main thread
+    return Promise.resolve({
+      remoteId: this.mainThreadId,
+      externalId: undefined,
+    });
   }
 
   private _truncateTitle(
@@ -141,36 +136,35 @@ export class LocalThreadListRuntimeCore
     }
   }
 
-  public generateTitle(threadId: string): Promise<void> {
-    if (threadId === this.mainThreadId) {
-      const messages = this._mainThread.messages;
+  public generateTitle(_threadId: string): Promise<void> {
+    // In local runtime, there's only one thread (the main thread)
+    // All generateTitle requests apply to the main thread
+    const messages = this._mainThread.messages;
 
-      // Find the first user message with text content
-      const firstUserMessage = messages.find((msg) => msg.role === "user");
+    // Find the first user message with text content
+    const firstUserMessage = messages.find((msg) => msg.role === "user");
 
-      let title = "New Conversation";
+    let title = "New Conversation";
 
-      if (firstUserMessage && firstUserMessage.content.length > 0) {
-        // Extract text parts using type-safe filtering
-        const textParts = firstUserMessage.content.filter(
-          (part) => part.type === "text",
-        ) as TextMessagePart[];
+    if (firstUserMessage && firstUserMessage.content.length > 0) {
+      // Extract text parts using type-safe filtering
+      const textParts = firstUserMessage.content.filter(
+        (part) => part.type === "text",
+      ) as TextMessagePart[];
 
-        if (textParts.length > 0) {
-          const firstTextPart = textParts[0];
-          if (firstTextPart) {
-            const text = firstTextPart.text.trim();
-            if (text.length > 0) {
-              title = this._truncateTitle(text);
-            }
+      if (textParts.length > 0) {
+        const firstTextPart = textParts[0];
+        if (firstTextPart) {
+          const text = firstTextPart.text.trim();
+          if (text.length > 0) {
+            title = this._truncateTitle(text);
           }
         }
       }
-
-      this._title = title;
-      this._notifySubscribers();
-      return Promise.resolve();
     }
-    throw new Error("Thread not found");
+
+    this._title = title;
+    this._notifySubscribers();
+    return Promise.resolve();
   }
 }
